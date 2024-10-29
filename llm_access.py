@@ -24,9 +24,9 @@ LEGAL_REFERENCES_FORMATTING=(
                                                        "<número-parágrafo-n>]}, ..."
                                     "], "
                        "\"anexos\": [\"único\" | <número-romano-anexo-1>, ..., "
-                                    "<número-romano-anexo-n>]"
-                      "}, ..."
-                     "]}"
+                                    "<número-romano-anexo-n>]}, ..."
+                     "]"
+    "}"
 )
 
 
@@ -77,9 +77,15 @@ class groq_access:
 
                         cleaned_text = generated_text.replace("\n", "")
 
-                        if cleaned_text.rfind("}") > 0:
-                            cleaned_text = cleaned_text[:cleaned_text.rfind("}") + 1]
-                        else:
+                        # if cleaned_text.rfind("}") > 0:
+                        #     if cleaned_text.rfind("}") < len(cleaned_text) - 5:
+                        #         cleaned_text += "}"
+                        #     else:
+                        #         cleaned_text = cleaned_text[:cleaned_text.rfind("}") + 1]
+                        # else:
+                        #     cleaned_text += "}"
+
+                        if cleaned_text[-1] != "}":
                             cleaned_text += "}"
 
                         print("\n\n---------------------")
