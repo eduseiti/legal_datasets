@@ -106,7 +106,7 @@ def process_single_page(page_lines,
                 if state['current_pattern'] == "END_OF_QUESTION":
                     current_question['answer'].append(line.strip())
 
-    return current_question, processing_state
+    return current_question, state
 
 
 
