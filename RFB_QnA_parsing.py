@@ -47,7 +47,8 @@ def process_answer_body(which_answer):
 def process_single_page(page_lines, 
                         current_question,
                         state,
-                        processed_questions):
+                        processed_questions,
+                        verbose=True):
 
     for line in page_lines[2:]:
     
@@ -61,16 +62,18 @@ def process_single_page(page_lines,
                     current_question['question_text'] = m.group(2).strip()
                     current_question['answer'] = []
 
-                    print("\n")
-                    print(current_question)
-                    print("\n")
+                    if verbose:
+                        print("\n")
+                        print(current_question)
+                        print("\n")
                     
                     if current_question['question_text'][-1] != "?":
                         state['current_pattern'] = "MULTI_LINE_QUESTION"
                     else:
                         state['current_pattern'] = "END_OF_QUESTION"
 
-                    print(f"Começo pergunta. questão={current_question['question_number']}")
+                    if verbose:
+                        print(f"Começo pergunta. questão={current_question['question_number']}")
             
             elif state['current_pattern'] == "MULTI_LINE_QUESTION":
                 if len(m.groups()) > 0:
@@ -78,7 +81,8 @@ def process_single_page(page_lines,
     
                     state['current_pattern'] = "END_OF_QUESTION"
 
-                    print(f"Achou fim pergunta. questão={current_question['question_number']}")
+                    if verbose:
+                        print(f"Achou fim pergunta. questão={current_question['question_number']}")
                 else:
                     current_question['question_text'] += " " + line
     
@@ -92,7 +96,8 @@ def process_single_page(page_lines,
                 
                 processed_questions.append(current_question)
 
-                print(f"Achou fim. questão={current_question['question_number']}. Total={len(processed_questions)}")
+                if verbose:
+                    print(f"Achou fim. questão={current_question['question_number']}. Total={len(processed_questions)}")
 
                 current_question = {}
                 state['current_pattern'] = "NEW_QUESTION"
@@ -127,7 +132,7 @@ def print_questions(questions_list):
 
 
 
-def extract_answers(which_file, pages_list=None):
+def extract_answers(which_file, pages_list=None, verbose=True):
 
     qna_irpf = fitz.open(which_file)
     print(f"Processing file {which_file} with {qna_irpf.page_count} pages...\n")
@@ -144,6 +149,7 @@ def extract_answers(which_file, pages_list=None):
         current_question, processing_state = process_single_page(qna_irpf.load_page(which_page).get_text("text").split("\n"),
                                                                  current_question,
                                                                  processing_state,
-                                                                 questions)
+                                                                 questions,
+                                                                 verbose=verbose)
 
     return questions
