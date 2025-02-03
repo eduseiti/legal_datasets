@@ -3,9 +3,10 @@ from groq import Groq
 import time
 import json
 
-GROQ_LLAMA3_2_90B_MODEL="llama-3.2-90b-text-preview"
+GROQ_LLAMA3_2_90B_MODEL="llama-3.2-90b-vision-preview"
 GROQ_LLAMA3_70B_MODEL="llama3-70b-8192"
 GROQ_LLAMA3_8B_MODEL="llama3-8b-8192"
+GROQ_LLAMA3_3_70B_MODEL="llama-3.3-70b-versatile"
 
 
 #
@@ -16,15 +17,19 @@ LEGAL_REFERENCES_FORMATTING=(
     "Leia a lista de referências jurídicas e processe as informações, "
     "separando-as de maneira estruturada. Produza uma resposta apenas com "
     "o JSON no formato a seguir, sem incluir comentários ou mensagens de erro adicionais: "
-    "{\"referências\":[{\"título\": <nome-completo-da-lei-ou-documento-jurídico-incluindo-instrumento-aprovação>, "
-                       "\"artigos\": [{\"artigo\": <número-do-artigo>, "
-                                      "\"incisos\": [<número-romano-inciso-1>, ..., "
-                                                    "<número-romano-inciso-n>], " 
-                                      "\"parágrafos\": [\"único\" | <número-parágrafo-1>, ..., "
-                                                       "<número-parágrafo-n>]}, ..."
-                                    "], "
-                       "\"anexos\": [\"único\" | <número-romano-anexo-1>, ..., "
-                                    "<número-romano-anexo-n>]}, ..."
+    "{\"referências\":[{ "
+                      "\"título\": \"<nome-completo-da-lei-ou-documento-jurídico-incluindo-instrumento-aprovação>\", "
+                      "\"artigos\": [{ "
+                                      "\"artigo\": \"<número-do-artigo>\", "
+                                      "\"incisos\": [\"<número-romano-inciso-1\">, ..., "
+                                                    "\"<número-romano-inciso-n>\"], " 
+                                      "\"parágrafos\": [\"único\" | \"<número-parágrafo-1>\", ..., "
+                                                       "\"<número-parágrafo-n>\"]"
+                                    "}..."
+                                   "], "
+                       "\"anexos\": [\"único\" | \"<número-romano-anexo-1>\", ..., "
+                                    "\"<número-romano-anexo-n>\"]"
+                      "}..."
                      "]"
     "}"
 )
