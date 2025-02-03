@@ -2,6 +2,7 @@ from groq import Groq
 
 import time
 import json
+import re
 
 GROQ_LLAMA3_2_90B_MODEL="llama-3.2-90b-vision-preview"
 GROQ_LLAMA3_70B_MODEL="llama3-70b-8192"
@@ -91,7 +92,13 @@ class groq_access:
                         #     cleaned_text += "}"
 
                         if cleaned_text[-1] != "}":
+                            # Add missing closing curly bracket
                             cleaned_text += "}"
+                        elif cleaned_text[-2] == "}":
+                            # Remove duplicated closing curly bracket
+                            cleaned_text = cleaned_text[:-1]
+
+                        cleaned_text = re.sub(r",\s*([\]\}])", r"\1", cleaned_text)
 
                         print("\n\n---------------------")
                         print(cleaned_text)
