@@ -36,6 +36,39 @@ LEGAL_REFERENCES_FORMATTING=(
 )
 
 
+#
+# Prompt for legal reference titles deduplication
+#
+
+LEGAL_REFERENCES_TITLES_DEDUPLICATION_OLD=(
+   "Você recebe uma lista de título de documentos jurídicos do Brasil "
+   "e deve retornar uma nova lista retirando documentos duplicados. Os "
+   "documentos estarão listados 1 por linha. Um mesmo documento pode "
+   "estar listado de maneira mais extensa, incluindo informações adicionais; "
+   "para esses casos, mantenha na nova lista apenas a versão mais completa. "
+   "Documentos com numeração diferente, ano diferente, ou mesmo dia diferente "
+   "são documentos diferentes e não devem ser removidos. Sua resposta "
+   "deve ser apenas o JSON no formato a seguir, nada mais: {\"deduplicated-references\":"
+   "[\"<reference-1>\", ..., \"<reference-n>\"]}"
+)
+
+
+
+LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
+    "Você recebe uma lista de título de documentos jurídicos do Brasil "
+    "e deve retornar uma nova lista retirando documentos duplicados. Os "
+    "documentos estarão listados 1 por linha. Documentos com numeração "
+    "diferente, ano diferente, ou mesmo dia diferente são documentos "
+    "diferentes e não devem ser removidos. Um mesmo documento pode estar "
+    "listado de maneira mais extensa, incluindo informações adicionais; "
+    "para esses casos, mantenha na nova lista apenas a versão mais completa; "
+    "mas se ano for diferente, mantenha ambas versões.  Sua resposta deve "
+    "ser apenas o JSON no formato a seguir, nada mais: {\"deduplicated-references\":"
+                                                        "[\"<reference-1>\", ..., \"<reference-n>\"]}"
+)
+
+
+
 
 #
 # Class defining the access to Groq models.
@@ -51,7 +84,7 @@ class groq_access:
         self.client = Groq(api_key=api_key)
         
 
-    def send_request(self, messages, temperature=0):
+    def send_request(self, messages, temperature=0, max_tokens=2048):
         
         completed_request = False
 
@@ -60,7 +93,7 @@ class groq_access:
                 completion = self.client.chat.completions.create(model=self.model,
                                                                  messages=messages,
                                                                  temperature=temperature,
-                                                                 max_tokens=2048,
+                                                                 max_tokens=max_tokens,
                                                                  top_p=1,
                                                                  stream=True,
                                                                  stop=None)
@@ -158,6 +191,37 @@ def legal_references_formatting(LLM_access: groq_access,
     print(messages)
 
     result = LLM_access.send_request(messages)
+
+    if verbose:
+        print("\n{}".format(result))
+    
+    return result
+
+
+
+#
+# Function to execute legal reference titles deduplication
+#
+
+def legal_refereces_titles_deduplication(LLM_access: groq_access,
+                                         titles_list: list[str],
+                                         verbose=True):
+
+    if verbose:
+        print(f"\n\nTitles deduplication. {len(titles_list)} elements\n")    
+
+    messages = [format_message("system", LEGAL_REFERENCES_TITLES_DEDUPLICATION)]
+
+    user_message = "Lista de documentos:\n" + "\n".join(titles_list)
+
+    if verbose:
+        print("\n{}".format(user_message))
+
+    messages.append(format_message("user", user_message))
+
+    print(messages)
+
+    result = LLM_access.send_request(messages, max_tokens=32768)
 
     if verbose:
         print("\n{}".format(result))
