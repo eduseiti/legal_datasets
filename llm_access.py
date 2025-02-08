@@ -114,15 +114,12 @@ class groq_access:
                         print(generated_text)
                         print("---------------------\n\n")
 
-                        cleaned_text = generated_text.replace("\n", "")
+                        # Remove json markdown, if any
+                        cleaned_text = generated_text.replace("```json", "")
+                        cleaned_text = cleaned_text.replace("```", "")
 
-                        # if cleaned_text.rfind("}") > 0:
-                        #     if cleaned_text.rfind("}") < len(cleaned_text) - 5:
-                        #         cleaned_text += "}"
-                        #     else:
-                        #         cleaned_text = cleaned_text[:cleaned_text.rfind("}") + 1]
-                        # else:
-                        #     cleaned_text += "}"
+                        # Remove new lines
+                        cleaned_text = cleaned_text.replace("\n", "")
 
                         if cleaned_text[-1] != "}":
                             # Add missing closing curly bracket
@@ -131,6 +128,7 @@ class groq_access:
                             # Remove duplicated closing curly bracket
                             cleaned_text = cleaned_text[:-1]
 
+                        # Remove extra comma at the end of a list
                         cleaned_text = re.sub(r",\s*([\]\}])", r"\1", cleaned_text)
 
                         print("\n\n---------------------")
