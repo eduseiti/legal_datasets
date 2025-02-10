@@ -68,7 +68,7 @@ def split_document_name(document_name):
 
 def get_tokens(s):
   if not s: return []
-  return s.split()
+  return re.split(r"\s|-", s)
 
 
 
