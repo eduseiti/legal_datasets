@@ -1,5 +1,6 @@
 import re
 import collections
+import numpy as np
 
 DOCUMENT_TITLE_REGEX=r"(.+)\s+n?º\s*([0-9\.]+)[,\s]+de\s+([0-9]+)º?\s+de\s+(\w+)\s+de\s+([0-9]{4})"
 
@@ -88,4 +89,51 @@ def compute_f1(a_gold, a_pred):
     recall = 1.0 * num_same / len(gold_toks)
     f1 = (2 * precision * recall) / (precision + recall)
     
-    return f1    
+    return f1 
+
+
+
+class legalDocumentsMatcher:
+    def __init__(self,
+                 documents_reference_filename):
+
+        self.documents_reference_filename = documents_reference_filename
+
+        with open(documents_reference_filename, "rb") as input_file:
+            self.reference_titles = pickle.load(input_file)
+    
+        self.reference_documents_parts = [split_document_name(which_document) for which_document in self.reference_titles]
+
+
+    
+    def get_best_match_for_parts(self, title_parts):
+        
+        title_f1 = np.array([compute_f1(title_parts[0], 
+                             reference_doc[0]) for reference_doc in self.reference_documents_parts])
+
+        number_f1 = np.array([compute_f1(title_parts[2], 
+                                         reference_doc[2]) for reference_doc in self.reference_documents_parts])
+    
+        
+        date_f1 = np.array([compute_f1(title_parts[3], 
+                                       reference_doc[3]) for reference_doc in self.reference_documents_parts])
+    
+        final_f1 = title_f1 + number_f1 + date_f1
+        reverse_ordered_final_f1 = np.argsort(final_f1)[::-1]
+    
+        for i in range(reverse_ordered_final_f1.shape[0]):
+            if final_f1[reverse_ordered_final_f1[0]] != final_f1[reverse_ordered_final_f1[i]]:
+                break
+
+        return {"title_f1": title_f1[reverse_ordered_final_f1[0]],
+                "number_f1": number_f1[reverse_ordered_final_f1[0]],
+                "date_f1": date_f1[reverse_ordered_final_f1[0]],
+                "best_matches": [self.reference_titles[j] for j in reverse_ordered_final_f1[:i]]}
+
+    
+    
+    def get_best_match(self, document_title):
+
+        title_parts = split_document_name(document_title.split(".txt")[0])
+
+        return self.get_best_match_for_parts(title_parts)
