@@ -16,16 +16,18 @@ GROQ_LLAMA3_3_70B_MODEL="llama-3.3-70b-versatile"
 #
 
 LEGAL_REFERENCES_FORMATTING=(
-    "Leia a lista de referências jurídicas e processe as informações, "
-    "separando-as de maneira estruturada. Produza uma resposta apenas com "
-    "o JSON no formato a seguir, sem incluir comentários ou mensagens de erro adicionais: "
+    "Leia a lista de referências jurídicas e processe as informações existentes, "
+    "separando de maneira estruturada o título da referência e as "
+    "informações de artigos e anexos que forem explicitamente citadas. Se nenhum "
+    "artigo ou anexo for citado, deixe a lista correspondente vazia. Sua resposta "
+    "deve ser apenas o JSON no formato a seguir, nenhum comentário a mais: "
     "{\"referências\":[{ "
                       "\"título\": \"<nome-completo-da-lei-ou-documento-jurídico-incluindo-instrumento-aprovação>\", "
                       "\"artigos\": [{ "
                                       "\"artigo\": \"<número-do-artigo>\", "
                                       "\"incisos\": [\"<número-romano-inciso-1\">, ..., "
                                                     "\"<número-romano-inciso-n>\"], " 
-                                      "\"parágrafos\": [\"único\" | \"<número-parágrafo-1>\", ..., "
+                                      "\"parágrafos\": [\"único\" | \"caput\" | \"<número-parágrafo-1>\", ..., "
                                                        "\"<número-parágrafo-n>\"]"
                                     "}..."
                                    "], "
@@ -42,7 +44,7 @@ LEGAL_REFERENCES_FORMATTING=(
 # Prompt for legal reference titles deduplication
 #
 
-LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
+LEGAL_REFERENCES_TITLES_DEDUPLICATION_OLD=(
     "Você recebe uma lista de título de documentos jurídicos do Brasil "
     "e deve retornar uma nova lista retirando documentos duplicados. Os "
     "documentos estarão listados 1 por linha. Documentos com numeração "
@@ -53,6 +55,22 @@ LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
     "mas se ano for diferente, mantenha ambas versões.  Sua resposta deve "
     "ser apenas o JSON no formato a seguir, nada mais: {\"deduplicated-references\":"
                                                         "[\"<reference-1>\", ..., \"<reference-n>\"]}"
+)
+
+
+
+LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
+    "Você recebe uma lista de título de documentos jurídicos do Brasil "
+    "e deve retornar uma nova lista retirando documentos duplicados: "
+    "1. Para cada documento, separe o nome, número e data de publicação; "
+    "2. Verifique na lista se existe outro documento com nome equivalente, "
+    "mesmo número e mesma data de publicação. Se houver, inclua na lista "
+    "apenas a versão que estiver mais completa, ou tiver o nome perfeitamente "
+    "escrito. 3. Atente que pareceres, instruções, atos declaratórios, "
+    "soluções de consulta tem numeração igual em anos diferentes e são "
+    "documentos diferentes e não devem ser removidos. Sua resposta deve "
+    "ser apenas o JSON no formato a seguir, nenhum comentário a mais: "
+    "{\"deduplicated-references\":[\"<reference-1>\", ..., \"<reference-n>\"]}"
 )
 
 
@@ -191,7 +209,7 @@ def legal_references_formatting(LLM_access: groq_access,
     
     print(messages)
 
-    result = LLM_access.send_request(messages)
+    result = LLM_access.send_request(messages, max_tokens=5096)
 
     if verbose:
         print("\n{}".format(result))

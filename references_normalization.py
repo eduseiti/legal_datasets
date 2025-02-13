@@ -2,21 +2,28 @@ import re
 import collections
 import numpy as np
 
+from itertools import groupby
+
+from llm_access import *
+import time
+
+
+
 DOCUMENT_TITLE_REGEX=r"(.+)\s+n?º\s*([0-9\.]+)[,\s]+de\s+([0-9]+)º?\s+de\s+(\w+)\s+de\s+([0-9]{4})"
 
-def return_unique_references(questions):
+def return_unique_references(questions, which_field="formatted_references"):
 
     all_references = {}
     
     questions_without_annotated_references = []
     
     for question in questions:
-        if 'formatted_references' not in question:
-            print(f"{question} ― No formatted_references field.\n")
+        if which_field not in question:
+            print(f"{question} ― No {which_field} field.\n")
             questions_without_annotated_references.append(question['question_number'])
         else:
-            if question['formatted_references'] is not None:
-                for each_reference in question['formatted_references']:
+            if question[which_field] is not None:
+                for each_reference in question[which_field]:
                     if 'título' not in each_reference:
                         print(f"{question['question_number']} = {each_reference}\n")
                     else:
@@ -25,7 +32,7 @@ def return_unique_references(questions):
                 
                         all_references[each_reference['título']].append(question['question_number'])
             else:
-                print(f"{question} ― Empty formatted_references field.\n")
+                print(f"{question} ― Empty {which_field} field.\n")
                 questions_without_annotated_references.append(question['question_number'])
 
     return all_references, questions_without_annotated_references
@@ -94,6 +101,7 @@ def compute_f1(a_gold, a_pred):
 
 
 class legalDocumentsMatcher:
+
     def __init__(self,
                  documents_reference_filename):
 
@@ -137,3 +145,66 @@ class legalDocumentsMatcher:
         title_parts = split_document_name(document_title.split(".txt")[0])
 
         return self.get_best_match_for_parts(title_parts)
+    
+
+
+def get_llm_interface(api_keys_file="/work/api_keys_20240427.json",
+                      which_llm_provider='groq',
+                      which_llm=GROQ_LLAMA3_3_70B_MODEL):
+
+    llm_key = json.load(open(api_keys_file))[which_llm_provider]
+
+    if which_llm_provider == 'groq':
+        llm_interface = groq_access(llm_key, which_llm)
+    else:
+        raise NotImplementedError(f"{which_llm_provider} LLM provider not supported in this version")
+
+    return llm_interface
+
+
+
+def deduplicate_legal_references_list(legal_references_list, 
+                                      llm_interface):
+
+    unique_references_by_initial_letter = {key: list(group) for key, group in groupby(legal_references_list, key=lambda x: x[0])}
+
+    group_counts = {}
+
+    for key, value in unique_references_by_initial_letter.items():
+        group_counts[key] = len(value)
+
+    print(group_counts)
+
+    processing_start = time.time()
+
+    deduplicated_reference_titles = []
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
+
+    for initial_letter, references in unique_references_by_initial_letter.items():
+        print("\n*****************************************")
+        print(f"Processing titles starting with {initial_letter}\n")
+        print("*****************************************\n")
+
+        if len(references) > 1:    
+            result = legal_refereces_titles_deduplication(llm_interface, references)
+        
+            print(f">> Original titles count={len(references)}; deduplicated titles count={len(result['deduplicated-references'])}")
+        
+            deduplicated_reference_titles += result["deduplicated-references"]
+        
+            total_prompt_tokens += result['prompt_tokens']
+            total_completion_tokens += result['completion_tokens']
+        else:
+            print(f">> Single document directly added to the list")
+            deduplicated_reference_titles += references
+
+    processing_end = time.time()
+
+    print(f"\n\nTotal time to process the legal references: {processing_end - processing_start}")
+    print(f"total_prompt_tokens={total_prompt_tokens}, total_completion_tokens={total_completion_tokens}")
+
+    return deduplicated_reference_titles, {"total_time": processing_end - processing_start,
+                                           "total_prompt_tokens": total_prompt_tokens,
+                                           "total_completion_tokens": total_completion_tokens}
+
