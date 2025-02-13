@@ -12,39 +12,12 @@ QUESTIONS_PROCESSING_PATTERNS={
 
 ANSWER_REFERENCES_PATTERN=".+\n\s?\((.+)\)\.?$|.+\n\s?\((.+)\)\.?\s*\n.*([Cc]onsulte.+pergunta.+)|.+([Cc]onsulte.+pergunta.+)$"
 ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\(([^)]+)\)\.?\n"
-ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\sas]+pergunta[s]?[e ,0-9]+)"
-
+# ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e ,0-9]+)"
+ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e\s,0-9(itens)(item)s]+)"
+QUESTION_REFERENCES_LIST_SPLIT_PATTERN="[Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?\s?"
+QUESTION_REFERENCE_SPLIT_PATTERN="\d+ \(itens[\s,\de]+\)|\d+ \(item \d+\)|\d+"
 
 ### Functions to process a single question
-
-# def process_answer_body(which_answer):
-#     m = re.match (ANSWER_REFERENCES_PATTERN, "\n".join(which_answer), flags=re.DOTALL)
-
-#     references = ""
-#     linked_questions = ""
-#     end_of_answer_offset = 0
-    
-#     if m is not None:
-#         if m.group(1) is not None:
-#             references = m.group(1)
-#             end_of_answer_offset = m.group(1).count('\n') + 1
-            
-#         elif m.group(2) is not None:
-#             references = m.group(2)
-            
-#             linked_questions = re.findall("\d+", m.group(3))
-
-#             end_of_answer_offset = m.group(2).count('\n') + m.group(3).count('\n') + 2
-#         elif m.group(4) is not None:
-#             linked_questions = re.findall("\d+", m.group(4))
-            
-#             end_of_answer_offset = m.group(4).count('\n') + 1
-            
-#     return {"answer_cleaned": which_answer[:-end_of_answer_offset] if end_of_answer_offset > 0 else which_answer,
-#             "references": references,
-#             "linked_questions": linked_questions}
-
-
 
 def process_answer_body(which_answer):
 
@@ -65,15 +38,22 @@ def process_answer_body(which_answer):
 
     print(question_references)
 
+    print(answer_cleaned)
+
     # Remove question references from answer body, consolidating them in a single list
 
     linked_questions = []
 
     for reference in question_references:
-        referred_questions = re.findall("\d+", reference)
+        referred_questions = re.split(QUESTION_REFERENCES_LIST_SPLIT_PATTERN, reference[0])[-1]
+        referred_questions = re.findall(QUESTION_REFERENCE_SPLIT_PATTERN, referred_questions)
 
         linked_questions = np.union1d(linked_questions, referred_questions)
-        answer_cleaned = re.sub('\n.*' + reference, "\n", "\n".join(answer_cleaned)).split("\n")
+
+        print(reference[0])
+        print("\n".join(answer_cleaned) + "\n")
+
+        answer_cleaned = re.sub("\n.*" + re.escape(reference[0]), "\n", "\n".join(answer_cleaned) + "\n").split("\n")
 
     return {"answer_cleaned": answer_cleaned,
             "references": legal_references,

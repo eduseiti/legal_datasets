@@ -10,6 +10,7 @@ GROQ_LLAMA3_8B_MODEL="llama3-8b-8192"
 GROQ_LLAMA3_3_70B_MODEL="llama-3.3-70b-versatile"
 
 
+
 #
 # Prompt for legal references formatting
 #
@@ -36,23 +37,10 @@ LEGAL_REFERENCES_FORMATTING=(
 )
 
 
+
 #
 # Prompt for legal reference titles deduplication
 #
-
-LEGAL_REFERENCES_TITLES_DEDUPLICATION_OLD=(
-   "Você recebe uma lista de título de documentos jurídicos do Brasil "
-   "e deve retornar uma nova lista retirando documentos duplicados. Os "
-   "documentos estarão listados 1 por linha. Um mesmo documento pode "
-   "estar listado de maneira mais extensa, incluindo informações adicionais; "
-   "para esses casos, mantenha na nova lista apenas a versão mais completa. "
-   "Documentos com numeração diferente, ano diferente, ou mesmo dia diferente "
-   "são documentos diferentes e não devem ser removidos. Sua resposta "
-   "deve ser apenas o JSON no formato a seguir, nada mais: {\"deduplicated-references\":"
-   "[\"<reference-1>\", ..., \"<reference-n>\"]}"
-)
-
-
 
 LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
     "Você recebe uma lista de título de documentos jurídicos do Brasil "
@@ -67,6 +55,21 @@ LEGAL_REFERENCES_TITLES_DEDUPLICATION=(
                                                         "[\"<reference-1>\", ..., \"<reference-n>\"]}"
 )
 
+
+
+#
+# Prompt to extract embedded legal references
+#
+
+EMBEDDED_LEGAL_REFERENCES_EXTRACTION=(
+    "Você recebe um texto que responde a uma pergunta no domínio jurídico "
+    "e deve gerar uma lista incluindo somente os documentos jurídicos oficiais "
+    "que são explicitamente referenciados no texto. Inclua detalhes de artigos, "
+    "parágrafos, incisos, anexos ou qualquer outro detalhe incluído das referências. "
+    "Ignore referências que são apenas outras perguntas. Sua resposta deve ser "
+    "apenas o JSON no formato a seguir, nenhum comentário a mais: "
+    "{\"referências_citadas\":[<\"referência-1\">, ...., <\"referência-n\">]}"
+)
 
 
 
@@ -220,6 +223,37 @@ def legal_refereces_titles_deduplication(LLM_access: groq_access,
     print(messages)
 
     result = LLM_access.send_request(messages, max_tokens=32768)
+
+    if verbose:
+        print("\n{}".format(result))
+    
+    return result
+
+
+
+#
+# Function to extract embedded legal references from answers
+#
+
+def embedded_legal_references_extraction(LLM_access: groq_access,
+                                         answer_text: str,
+                                         verbose=True):
+
+    if verbose:
+        print(f"\n\nEmbedded references extraction. Answer size={len(answer_text)}\n")    
+
+    messages = [format_message("system", EMBEDDED_LEGAL_REFERENCES_EXTRACTION)]
+
+    user_message = "Texto:\n" + answer_text
+
+    if verbose:
+        print("\n{}\n".format(user_message))
+
+    messages.append(format_message("user", user_message))
+
+    print(messages)
+
+    result = LLM_access.send_request(messages, max_tokens=5096)
 
     if verbose:
         print("\n{}".format(result))
