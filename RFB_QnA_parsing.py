@@ -11,9 +11,12 @@ QUESTIONS_PROCESSING_PATTERNS={
 }
 
 ANSWER_REFERENCES_PATTERN=".+\n\s?\((.+)\)\.?$|.+\n\s?\((.+)\)\.?\s*\n.*([Cc]onsulte.+pergunta.+)|.+([Cc]onsulte.+pergunta.+)$"
-ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\(([^)]+)\)\.?\n"
+# ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\(([^)]+)\)\.?\n"
+ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\((.+)\)\.?\n"
+
 # ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e ,0-9]+)"
 ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e\s,0-9(itens)(item)s]+)"
+
 QUESTION_REFERENCES_LIST_SPLIT_PATTERN="[Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?\s?"
 QUESTION_REFERENCE_SPLIT_PATTERN="\d+ \(itens[\s,\de]+\)|\d+ \(item \d+\)|\d+"
 
@@ -31,7 +34,7 @@ def process_answer_body(which_answer):
     answer_cleaned = which_answer
 
     for reference in legal_references:
-        answer_cleaned = re.sub('\(.*' + reference + '.*\)', "", "\n".join(answer_cleaned)).split("\n")
+        answer_cleaned = re.sub('\(.*' + re.escape(reference) + '.*\)', "", "\n".join(answer_cleaned)).split("\n")
         # answer_cleaned = "\n".join(answer_cleaned).replace(reference, '').split("\n")
 
     # print(answer_cleaned)

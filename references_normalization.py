@@ -9,6 +9,8 @@ import time
 
 from sklearn.cluster import KMeans
 
+import pickle
+
 
 
 DOCUMENT_TITLE_REGEX=r"(.+)\s+n?º\s*([0-9\.]+)[,\s]+de\s+([0-9]+)º?\s+de\s+(\w+)\s+de\s+([0-9]{4})"
@@ -148,6 +150,39 @@ class legalDocumentsMatcher:
 
         return self.get_best_match_for_parts(title_parts)
     
+
+
+def execute_references_match(matcher, references_to_match):
+
+    extracted_documents_parts = [split_document_name(which_document.split(".txt")[0]) for which_document in references_to_match]
+
+    extracted_documents_matches = []
+
+    for extracted_id, extracted_doc in enumerate(extracted_documents_parts):
+
+        result = matcher.get_best_match_for_parts(extracted_doc)
+
+        extracted_documents_matches.append({"extracted_title": references_to_match[extracted_id],
+                                            "title_f1": result["title_f1"],
+                                            "number_f1": result["number_f1"],
+                                            "date_f1": result["date_f1"],
+                                            "best_matches": result["best_matches"],}) 
+
+    exact_matches = []
+    multiple_matches = []
+
+    for doc_match in extracted_documents_matches:
+        if len(doc_match['best_matches']) == 1:
+            exact_matches.append(doc_match)
+        else:
+            multiple_matches.append(doc_match)
+
+    print(f"Number of exact matches={len(exact_matches)}; number of multiple matches={len(multiple_matches)}")
+
+    return {"extracted_references_matches": extracted_documents_matches,
+            "exact_matches": exact_matches,
+            "multiple_matches": multiple_matches}
+
 
 
 def get_llm_interface(api_keys_file="/work/api_keys_20240427.json",
