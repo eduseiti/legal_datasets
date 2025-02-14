@@ -7,6 +7,8 @@ from itertools import groupby
 from llm_access import *
 import time
 
+from sklearn.cluster import KMeans
+
 
 
 DOCUMENT_TITLE_REGEX=r"(.+)\s+n?º\s*([0-9\.]+)[,\s]+de\s+([0-9]+)º?\s+de\s+(\w+)\s+de\s+([0-9]{4})"
@@ -163,6 +165,44 @@ def get_llm_interface(api_keys_file="/work/api_keys_20240427.json",
 
 
 
+DOCUMENTS_LIST_MAX_LENGTH=20
+
+def cluster_legal_references_by_number(documents_list, 
+                                       max_cluster_size_reference=DOCUMENTS_LIST_MAX_LENGTH,
+                                       verbose=True):
+
+    splitted_list = [split_document_name(which_doc) for which_doc in documents_list]
+
+    # Get document numbers
+
+    converted = []
+
+    for element in splitted_list:
+        if element[2] == '':
+            converted.append(-1)
+        else:
+            converted.append(int(element[2].replace('.', '')))
+
+    kmeans = KMeans(n_clusters=len(converted) // max_cluster_size_reference + 1, 
+                    random_state=0, 
+                    n_init=10).fit(np.array(converted).reshape(-1, 1))
+
+    clusters = {}
+    for i, label in enumerate(kmeans.labels_):
+        clusters.setdefault(label, []).append(documents_list[i])
+
+    cluster_sizes = []
+
+    for cluster_id, cluster in clusters.items():
+        cluster_sizes.append(len(cluster))
+
+        if verbose:
+            print(f"Cluster {cluster_id}: {cluster}\n")
+
+    return clusters, cluster_sizes
+
+
+
 def deduplicate_legal_references_list(legal_references_list, 
                                       llm_interface):
 
@@ -186,15 +226,32 @@ def deduplicate_legal_references_list(legal_references_list,
         print(f"Processing titles starting with {initial_letter}\n")
         print("*****************************************\n")
 
-        if len(references) > 1:    
-            result = legal_refereces_titles_deduplication(llm_interface, references)
-        
-            print(f">> Original titles count={len(references)}; deduplicated titles count={len(result['deduplicated-references'])}")
-        
-            deduplicated_reference_titles += result["deduplicated-references"]
-        
-            total_prompt_tokens += result['prompt_tokens']
-            total_completion_tokens += result['completion_tokens']
+        if len(references) > 1:
+            if len(references) > DOCUMENTS_LIST_MAX_LENGTH:
+                print(f">> Titles list longer than {DOCUMENTS_LIST_MAX_LENGTH} elements. Clustering by document number to process.")
+
+                references_clusters, clusters_sizes = cluster_legal_references_by_number(references)
+            
+                references_lists = list(references_clusters.values())
+
+                print(f">> Resulting clusters sizes: {clusters_sizes}")
+            else:
+                references_lists = [references]
+
+            for references_cluster in references_lists:
+
+                if len(references_cluster) > 1:
+                    result = legal_refereces_titles_deduplication(llm_interface, references_cluster)
+                
+                    print(f">> Original titles count={len(references_cluster)}; deduplicated titles count={len(result['deduplicated-references'])}")
+                
+                    deduplicated_reference_titles += result["deduplicated-references"]
+                
+                    total_prompt_tokens += result['prompt_tokens']
+                    total_completion_tokens += result['completion_tokens']
+                else:
+                    print(f">> Single document directly added to the list")
+                    deduplicated_reference_titles += references_cluster                    
         else:
             print(f">> Single document directly added to the list")
             deduplicated_reference_titles += references
