@@ -72,7 +72,8 @@ def split_document_name(document_name):
                 name_parts += ['', '']
 
         name_parts = name_parts[0:1] + ['', ''] + name_parts[1:-1]
-    
+    else:
+        name_parts[2] = name_parts[2].replace('.', '')
 
     return name_parts
 
@@ -80,7 +81,10 @@ def split_document_name(document_name):
 
 def get_tokens(s):
   if not s: return []
-  return re.split(r"\s|-", s.lower())
+
+  reduced_s = re.sub(r"\be\b|\bda\b|\bdo\b|\bde\b", ' ', s)
+
+  return re.split(r"\s+|-", reduced_s.lower())
 
 
 
