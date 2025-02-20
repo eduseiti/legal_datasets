@@ -6,7 +6,7 @@ import numpy as np
 
 QUESTIONS_PROCESSING_PATTERNS={
     "NEW_QUESTION": "^([0-9]{3}[0-9]?)\s?[—–-]\s?(.+)",
-    "MULTI_LINE_QUESTION":"^(.+\?)",
+    "MULTI_LINE_QUESTION":"^(.+\??)",
     "END_OF_QUESTION": "^Retorno ao sumário"
 }
 
