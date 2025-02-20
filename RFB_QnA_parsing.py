@@ -11,10 +11,8 @@ QUESTIONS_PROCESSING_PATTERNS={
 }
 
 ANSWER_REFERENCES_PATTERN=".+\n\s?\((.+)\)\.?$|.+\n\s?\((.+)\)\.?\s*\n.*([Cc]onsulte.+pergunta.+)|.+([Cc]onsulte.+pergunta.+)$"
-# ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\(([^)]+)\)\.?\n"
 ANSWER_LEGAL_REFERENCES_PATTERN="\n\s?\((.+)\)\.?\n"
 
-# ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e ,0-9]+)"
 ANSWER_QUESTION_REFERENCES_PATTERN="[^\n]*\s?([Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?[e\s,0-9(itens)(item)s]+)"
 
 QUESTION_REFERENCES_LIST_SPLIT_PATTERN="[Cc]onsulte[\s,]*(ainda)?[,]*[\sas]+pergunta[s]?\s?"
@@ -78,7 +76,7 @@ def process_single_page(page_lines,
             if state['current_pattern'] == "NEW_QUESTION":
                 if len(m.groups()) > 0:
                     current_question['question_number'] = m.group(1)
-                    current_question['question_summary'] = state['current_last_line']
+                    current_question['question_summary'] = state['current_last_line'].strip()
                     current_question['question_text'] = m.group(2).strip()
                     current_question['answer'] = []
 
@@ -97,7 +95,7 @@ def process_single_page(page_lines,
             
             elif state['current_pattern'] == "MULTI_LINE_QUESTION":
                 if len(m.groups()) > 0:
-                    current_question['question_text'] += " " + m.group(1)
+                    current_question['question_text'] += " " + m.group(1).strip()
     
                     if current_question['question_text'][-1] == "?":
                         state['current_pattern'] = "END_OF_QUESTION"
@@ -122,15 +120,17 @@ def process_single_page(page_lines,
 
                 current_question = {}
                 state['current_pattern'] = "NEW_QUESTION"
-        
+                state['current_last_line'] = ""
             else:
                 raise ValueError(f"Invalid pattern {state['current_pattern']}")
         else:
             if len(line.strip()) > 0:
-                state['current_last_line'] = line.strip()
-        
                 if state['current_pattern'] == "END_OF_QUESTION":
                     current_question['answer'].append(line.strip())
+                else:
+                    state['current_last_line'] += " " + line.strip()
+            else:
+                state['current_last_line'] = ""
 
     return current_question, state
 
