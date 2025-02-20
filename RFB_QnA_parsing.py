@@ -99,10 +99,11 @@ def process_single_page(page_lines,
                 if len(m.groups()) > 0:
                     current_question['question_text'] += " " + m.group(1)
     
-                    state['current_pattern'] = "END_OF_QUESTION"
+                    if current_question['question_text'][-1] == "?":
+                        state['current_pattern'] = "END_OF_QUESTION"
 
-                    if verbose:
-                        print(f"Achou fim pergunta. questão={current_question['question_number']}")
+                        if verbose:
+                            print(f"Achou fim pergunta. questão={current_question['question_number']}")
                 else:
                     current_question['question_text'] += " " + line
     
