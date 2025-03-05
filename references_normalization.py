@@ -125,7 +125,7 @@ class legalDocumentsMatcher:
     def get_best_match_for_parts(self, title_parts):
         
         title_f1 = np.array([compute_f1(title_parts[0], 
-                             reference_doc[0]) for reference_doc in self.reference_documents_parts])
+                                        reference_doc[0]) for reference_doc in self.reference_documents_parts])
 
         number_f1 = np.array([compute_f1(title_parts[2], 
                                          reference_doc[2]) for reference_doc in self.reference_documents_parts])
@@ -188,6 +188,64 @@ def execute_references_match(matcher, references_to_match):
             "multiple_matches": multiple_matches}
 
 
+
+def check_question_reference_matches(question, 
+                                     which_field, 
+                                     question_references_dict, 
+                                     multiple_matches_list, 
+                                     doc_matcher):
+    
+    if question[which_field] is not None:
+        for i, reference in enumerate(question[which_field]):
+            if 'título' in reference:
+                reference_matches = doc_matcher.get_best_match(reference['título'])
+        
+                if len(reference_matches['best_matches']) == 1:
+                    if reference_matches['best_matches'][0] not in question_references_dict['references']:
+                        question_references_dict['references'][reference_matches['best_matches'][0]] = []
+        
+                    question_references_dict['references'][reference_matches['best_matches'][0]].append(reference)
+                else:
+                    print(f">>{question_references_dict['question_number']}, {which_field} item {i} multiple matches: {reference_matches}\n")
+                    multiple_matches_list.append({
+                        'question_number': question_references_dict['question_number'],
+                        'reference_field': which_field,
+                        'reference_item': i,
+                        'reference_title': reference['título'],
+                        'reference_matches': reference_matches['best_matches']
+                    })
+            else:
+                print(f">> Missing reference title in entry {i}: {reference}")
+
+
+
+def verify_questions_references(questions, references_list_file):
+
+    doc_matcher = legalDocumentsMatcher(references_list_file)
+
+    matches = []
+
+    multiple_matches = []
+
+    for i, question in enumerate(questions):
+        print(f"Handling question entry {i}")
+        question_references = {}
+        question_references['question_number'] = int(question['question_number'])
+        question_references['references'] = {}
+
+        check_question_reference_matches(question, 'formatted_references', question_references, multiple_matches, doc_matcher)    
+        check_question_reference_matches(question, 'formatted_embedded_references', question_references, multiple_matches, doc_matcher)
+
+        matches.append(question_references)
+
+    return {'matches': matches,
+            'multiple_matches': multiple_matches}
+
+
+
+#
+# Reference deduplication using LLM
+#
 
 def get_llm_interface(api_keys_file="/work/api_keys_20240427.json",
                       which_llm_provider='groq',
