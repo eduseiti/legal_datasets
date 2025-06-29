@@ -134,6 +134,19 @@ LEGISLATION_SPLITTING_HIERARCHY_BRAZIL=[
 
 
 
+LEGISLATION_SPLITTING_HIERARCHY_BRAZIL_NO_NEWLINE=[
+    "LIVRO [IVX]+",
+    "TÍTULO [IVX]+",
+    "CAPÍTULO [IVX]+|Capítulo [IVX]+|\nCAPÍTULO ÚNICO",
+    "Seção [IVX]+",
+    "Subseção [IVX]+",
+    "Art\. \d+[º\. ]*|\s+Art\. \d+[º\. ]*|Artigo único\.",
+    "§ \d+[º\. ]+",
+    "[IVX]+[-\s]+",
+]
+
+
+
 def flatten_passages_hierarchy(passages_dictionary, current_path="", passages=[]):
 
     for item, value in passages_dictionary.items():
@@ -176,9 +189,6 @@ class tokensCounter:
 
         desc_stats = stats.describe(num_tokens_por_chunk)
         
-        mediana_tokens = statistics.median(num_tokens_por_chunk)
-        max_token_passage = np.argmax(num_tokens_por_chunk)
-
         return({'max_tokens': desc_stats.minmax[1],
                 'min_tokens': desc_stats.minmax[0],
                 'mean_tokens': desc_stats.mean,
